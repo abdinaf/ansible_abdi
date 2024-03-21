@@ -1,0 +1,36 @@
+---
+- name: provision nginx web server
+  hosts: all
+  gather_facts: yes
+  become: yes
+  vars:
+    nginx_version: 1.18.0-0ubuntu1.4
+    nginx_custom_directory: /home/ubuntu/nginx
+    web_server_port: 80
+  tasks:
+  - name: update and upgrade apt
+    ansible.builtin.apt:
+      update_cache: yes
+      cache_vaild_time: 3600
+      upgrade: yes
+  - name: "install nginx to version {{ nginx_version }}"
+    ansible.builtin.apt:
+      name: "nginx={{ nginx_version }}"
+      state: present
+  - name: copy the nginx configuration file to the host
+    template:
+      src: templates/nginx.conf.j2
+      dest: /etc/nginx/sites-available/default
+  - name: create link to the new config to enable it
+    file:
+      dest: /etc/nginx/sites-enabled/default
+      src: /etc/nginx/sites-available/default
+      state: directory
+  - name: copy index.html to the nginx directory
+    copy:
+      src: files/index.html
+      dest: "{{nginx_custom_directory}}/index.html"
+  - name: restart the nginx service
+    service:
+      name: nginx
+      state: restarted
